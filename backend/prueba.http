@@ -1,0 +1,120 @@
+### =======================================
+###       AUTENTICACIÓN DE USUARIOS
+### =======================================
+
+### REGISTRAR UN NUEVO USUARIO (TÉCNICO)
+# (Para usar esto, necesitas un token de administrador)
+POST http://localhost:3001/api/usuarios/registro
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "nombre": "Administrador Principal",
+  "email": "admin@dreamsjaderesort.com",
+  "password": "password",
+  "rol_id": 1
+}
+
+### INICIAR SESIÓN (Ejecuta esta petición PRIMERO)
+# @name loginRequest
+POST http://localhost:3001/api/usuarios/login
+Content-Type: application/json
+
+{
+  "email": "admin@dreamsjaderesort.com",
+  "password": "password"
+}
+
+### Guardamos el token en la variable 'authToken'
+@authToken = {{loginRequest.response.body.token}}
+
+
+### =======================================
+###       GESTIÓN DE ACTIVOS
+### =======================================
+
+### OBTENER TODAS LAS CATEGORÍAS
+GET http://localhost:3001/api/categorias
+Authorization: Bearer {{authToken}}
+
+### OBTENER TODOS LOS ACTIVOS
+GET http://localhost:3001/api/activos
+Authorization: Bearer {{authToken}}
+
+### OBTENER UN SOLO ACTIVO (cambia el '1')
+GET http://localhost:3001/api/activos/1
+Authorization: Bearer {{authToken}}
+
+### CREAR UN NUEVO ACTIVO (TIPO LAPTOP) - ¡ESTRUCTURA CORREGIDA!
+POST http://localhost:3001/api/activos
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "categoria_id": 13,
+  "nombre": "Laptop-Dev-02",
+  "marca": "Apple",
+  "modelo": "MacBook Pro 14",
+  "numero_serie": "SN-APPLE-002",
+  "estado": "Activo",
+  "ubicacion": "Área de Desarrollo",
+  "especificaciones": {
+    "cpu": "Apple M3 Pro",
+    "ram": "18GB",
+    "disco_duro": "512GB SSD"
+  }
+}
+
+### ACTUALIZAR UN ACTIVO (cambia el '1')
+PUT http://localhost:3001/api/activos/1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "responsable": "Rodrigo De La Cruz",
+  "estado": "En Mantenimiento",
+  "ubicacion": "Laboratorio de TI"
+}
+
+### ELIMINAR UN ACTIVO (cambia el '2')
+DELETE http://localhost:3001/api/activos/2
+Authorization: Bearer {{authToken}}
+
+
+### =======================================
+###       GESTIÓN DE MANTENIMIENTO
+### =======================================
+
+### CREAR un nuevo mantenimiento para el activo con ID 1
+POST http://localhost:3001/api/mantenimientos
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "activo_id": 1,
+  "tipo": "preventivo",
+  "titulo": "Limpieza interna y revisión de ventiladores",
+  "descripcion": "Se realizará limpieza de polvo y se verificará el funcionamiento de los ventiladores del CPU.",
+  "estado": "programado",
+  "fecha_programada": "2025-10-15"
+}
+
+### OBTENER el historial de mantenimientos para el activo con ID 1
+GET http:// localhost:3001/api/mantenimientos/activo/1
+Authorization: Bearer {{authToken}}
+
+### ACTUALIZAR un mantenimiento (cambia el '1' por el ID del mantenimiento)
+PUT http://localhost:3001/api/mantenimientos/1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "estado": "completado",
+  "observaciones": "Limpieza realizada sin inconvenientes.",
+  "fecha_realizada": "2025-10-06T10:00:00"
+}
+
+### ELIMINAR un mantenimiento (cambia el '1' por el ID del mantenimiento)
+# (Recuerda que debes estar logueado como admin)
+DELETE http://localhost:3001/api/mantenimientos/1
+Authorization: Bearer {{authToken}}

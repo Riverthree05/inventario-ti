@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const activosControlador = require('../controladores/activosControlador');
+const { verificarToken, verificarAdmin } = require('../middleware/autenticacion');
+router.get('/', verificarToken, activosControlador.obtenerTodos);
+router.get('/:id', verificarToken, activosControlador.obtenerPorId);
+router.post('/', verificarToken, activosControlador.crear);
+router.put('/:id', verificarToken, activosControlador.actualizar);
+router.delete('/:id', verificarToken, verificarAdmin, activosControlador.eliminar);
+module.exports = router;

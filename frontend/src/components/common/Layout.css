@@ -1,0 +1,27 @@
+.app-layout {
+  display: flex;
+}
+
+.main-content {
+  margin-left: 240px; /* Ancho del sidebar */
+  width: calc(100% - 240px); /* Ocupa el resto del espacio */
+  padding: 24px;
+  min-height: 100vh;
+}
+
+/* Reglas para hacer el layout responsivo en móviles */
+@media (max-width: 768px) {
+  .sidebar {
+    /* En una versión futura podríamos ocultarlo con un botón, por ahora lo dejamos visible */
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  .app-layout {
+    flex-direction: column;
+  }
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
