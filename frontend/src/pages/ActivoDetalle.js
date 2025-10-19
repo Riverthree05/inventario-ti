@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
 import MantenimientoHistorial from '../components/mantenimiento/MantenimientoHistorial';
+// Importar componentes de Material-UI
+import { Box, Typography, Paper, Grid, Button, Divider, CircularProgress } from '@mui/material';
 
 function ActivoDetalle() {
   const [activo, setActivo] = useState(null);
@@ -12,21 +14,21 @@ function ActivoDetalle() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Cargar datos del activo
+    // La lógica para cargar datos se mantiene igual
     apiClient.get(`/activos/${id}`)
-      .then(response => setActivo(response.data))
-      .catch(err => setError('No se pudo cargar la información del activo.'));
+      .then(res => setActivo(res.data))
+      .catch(err => {
+        console.error('Error al obtener el activo:', err);
+        setError('No se pudo cargar la información del activo.');
+      });
 
-    // Cargar historial de mantenimientos
     apiClient.get(`/mantenimientos/activo/${id}`)
-      .then(response => setMantenimientos(response.data))
+      .then(res => setMantenimientos(res.data))
       .catch(err => console.error('Error al obtener mantenimientos:', err));
-      
-    // Cargar la imagen del código QR
-    apiClient.get(`/qr/activo/${id}`)
-      .then(response => setQrCodeUrl(response.data.qrDataUrl))
-      .catch(err => console.error('Error al obtener el QR:', err));
 
+    apiClient.get(`/qr/activo/${id}`)
+      .then(res => setQrCodeUrl(res.data.qrDataUrl))
+      .catch(err => console.error('Error al obtener el QR:', err));
   }, [id]);
 
   const handleEliminar = () => {
@@ -43,59 +45,89 @@ function ActivoDetalle() {
     window.open(`/activos/etiqueta/${id}`, '_blank');
   };
 
-  if (error) return <div style={{ color: 'red', padding: '20px' }}>Error: {error}</div>;
-  if (!activo) return <div style={{ padding: '20px' }}>Cargando...</div>;
+  // Mostrar error si existe
+  if (error) return <Typography color="error" sx={{ p: 3 }}>Error: {error}</Typography>;
+  // Mostrar indicador de carga si los datos aún no llegan
+  if (!activo) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
 
-  const especificaciones = activo.especificaciones && typeof activo.especificaciones === 'string'
-    ? JSON.parse(activo.especificaciones)
-    : activo.especificaciones || {};
+  // Parsear especificaciones de forma segura
+  let especificaciones = {};
+  if (activo.especificaciones && typeof activo.especificaciones === 'string') {
+    try {
+      especificaciones = JSON.parse(activo.especificaciones);
+    } catch (e) {
+      console.error("Error al parsear especificaciones JSON:", e);
+    }
+  } else if (activo.especificaciones) {
+    especificaciones = activo.especificaciones;
+  }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Detalles del Activo: {activo.nombre}</h1>
-      
-      <h3>Datos Generales</h3>
-      <ul>
-        <li><strong>ID:</strong> {activo.id}</li>
-        <li><strong>Categoría:</strong> {activo.categoria_nombre}</li>
-        <li><strong>Marca:</strong> {activo.marca}</li>
-        <li><strong>Modelo:</strong> {activo.modelo}</li>
-        <li><strong>Número de Serie:</strong> {activo.numero_serie}</li>
-        <li><strong>Estado:</strong> {activo.estado}</li>
-        <li><strong>Ubicación:</strong> {activo.ubicacion}</li>
-      </ul>
+    // Usar Paper como contenedor principal
+    <Paper sx={{ p: 3, margin: 'auto', maxWidth: 1200, flexGrow: 1 }}>
+      <Typography variant="h4" gutterBottom>{activo.nombre}</Typography>
 
-      <h3>Especificaciones</h3>
-      <ul>
-        {Object.entries(especificaciones).map(([key, value]) => (
-          <li key={key}><strong>{key.replace(/_/g, ' ')}:</strong> {String(value)}</li>
-        ))}
-      </ul>
+      <Grid container spacing={4}>
+        {/* Columna Izquierda: Datos y Especificaciones */}
+        <Grid item xs={12} md={8}>
+          <Typography variant="h6" gutterBottom>Datos Generales</Typography>
+          <Box component="ul" sx={{ listStyle: 'none', p: 0, mb: 2 }}>
+            <li><strong>Categoría:</strong> {activo.categoria_nombre || 'N/A'}</li>
+            <li><strong>Marca:</strong> {activo.marca || 'N/A'}</li>
+            <li><strong>Modelo:</strong> {activo.modelo || 'N/A'}</li>
+            <li><strong>Número de Serie:</strong> {activo.numero_serie || 'N/A'}</li>
+            <li><strong>Estado:</strong> {activo.estado || 'N/A'}</li>
+            <li><strong>Ubicación:</strong> {activo.ubicacion || 'N/A'}</li>
+            <li><strong>Responsable:</strong> {activo.responsable || 'N/A'}</li>
+            <li><strong>Proveedor:</strong> {activo.proveedor || 'N/A'}</li>
+            <li><strong>Fecha Compra:</strong> {activo.fecha_compra ? new Date(activo.fecha_compra).toLocaleDateString() : 'N/A'}</li>
+            <li><strong>Precio (USD):</strong> ${activo.precio_usd || '0.00'}</li>
+            <li><strong>Notas:</strong> {activo.notas || 'N/A'}</li>
+          </Box>
 
-      <MantenimientoHistorial mantenimientos={mantenimientos} />
+          <Divider sx={{ my: 2 }} />
 
-      <div style={{ marginTop: '30px' }}>
-        <h3>Código QR</h3>
-        {qrCodeUrl ? (
-          <img 
-            src={qrCodeUrl}
-            alt={`Código QR para ${activo.nombre}`} 
-            style={{ backgroundColor: 'white', padding: '10px', borderRadius: '5px' }}
-          />
-        ) : (
-          <p>Generando QR...</p>
-        )}
-        <p>Escanea este código para acceder rápidamente a esta página.</p>
-        <button onClick={handleImprimir} style={{ marginTop: '10px' }}>Imprimir Etiqueta QR</button>
-      </div>
+          <Typography variant="h6" gutterBottom>Especificaciones</Typography>
+          <Box component="ul" sx={{ listStyle: 'none', p: 0 }}>
+            {Object.keys(especificaciones).length > 0 ? (
+              Object.entries(especificaciones).map(([key, value]) => (
+                <li key={key}><strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {String(value)}</li>
+              ))
+            ) : (
+              <li>No hay especificaciones adicionales para esta categoría.</li>
+            )}
+          </Box>
+        </Grid>
 
-      <div style={{ marginTop: '30px' }}>
-        <Link to="/dashboard" style={{ marginRight: '10px' }}>Volver</Link>
-        <Link to={`/activos/editar/${activo.id}`} style={{ marginRight: '10px' }}><button>Editar</button></Link>
-        <button onClick={handleEliminar} style={{ backgroundColor: '#dc3545', color: 'white' }}>Eliminar</button>
-        <Link to={`/mantenimientos/nuevo/${activo.id}`}><button style={{ marginLeft: '10px', backgroundColor: '#28a745' }}>Registrar Mantenimiento</button></Link>
-      </div>
-    </div>
+        {/* Columna Derecha: QR */}
+        <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">Código QR</Typography>
+          {qrCodeUrl ? (
+            <img
+              src={qrCodeUrl}
+              alt={`QR para ${activo.nombre}`}
+              style={{ width: '100%', maxWidth: '200px', border: '1px solid #ddd', padding: '5px', marginTop: '10px' }}
+            />
+          ) : <CircularProgress sx={{ mt: 2 }} />}
+          <Button variant="outlined" onClick={handleImprimir} sx={{ mt: 2 }} fullWidth>
+            Imprimir Etiqueta
+          </Button>
+        </Grid>
+      </Grid>
+
+      {/* Historial de Mantenimiento */}
+      <Box sx={{ mt: 4 }}>
+        <MantenimientoHistorial mantenimientos={mantenimientos} />
+      </Box>
+
+      {/* Botones de Acción */}
+      <Box sx={{ mt: 4, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+        <Button variant="contained" component={Link} to="/dashboard">Volver al Dashboard</Button>
+        <Button variant="outlined" color="primary" component={Link} to={`/activos/editar/${id}`}>Editar</Button>
+        <Button variant="contained" color="error" onClick={handleEliminar}>Eliminar</Button>
+        <Button variant="contained" color="success" component={Link} to={`/mantenimientos/nuevo/${id}`}>Registrar Mantenimiento</Button>
+      </Box>
+    </Paper>
   );
 }
 

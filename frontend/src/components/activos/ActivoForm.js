@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Box, TextField, Button, MenuItem, Typography, Grid, Paper, CircularProgress } from '@mui/material'; // Import CircularProgress
 
 function ActivoForm() {
   const [categorias, setCategorias] = useState([]);
   const [activo, setActivo] = useState({
-    categoria_id: '',
-    nombre: '',
-    marca: '',
-    modelo: '',
-    numero_serie: '',
-    estado: 'Activo',
-    ubicacion: '',
-    proveedor: '',
-    fecha_compra: '',
-    precio_usd: '',
-    responsable: '',
-    notas: ''
+    categoria_id: '', nombre: '', marca: '', modelo: '', numero_serie: '',
+    estado: 'Activo', ubicacion: '', proveedor: '', fecha_compra: '',
+    precio_usd: '', responsable: '', notas: ''
   });
   const [especificaciones, setEspecificaciones] = useState({});
   const [error, setError] = useState('');
@@ -25,115 +17,201 @@ function ActivoForm() {
   const { id } = useParams();
 
   useEffect(() => {
+    setIsLoading(true); // Start loading
     apiClient.get('/categorias')
       .then(res => setCategorias(res.data))
       .catch(err => console.error("Error al cargar categorías", err));
-    
+
     if (id) {
-        // Lógica para cargar los datos del activo en modo edición
+      apiClient.get(`/activos/${id}`)
+        .then(res => {
+          const { especificaciones: specsStr, ...datosComunes } = res.data;
+          let especificacionesParseadas = {};
+          try {
+            // Parse specs only if it's a non-empty string
+            if (specsStr && typeof specsStr === 'string') {
+              especificacionesParseadas = JSON.parse(specsStr);
+            } else if (specsStr) {
+               // If it's already an object (shouldn't happen with correct backend)
+              especificacionesParseadas = specsStr;
+            }
+          } catch (e) { console.error("Error al parsear JSON:", e); }
+
+          // Ensure fecha_compra is formatted correctly or set to empty string
+          if (datosComunes.fecha_compra) {
+            datosComunes.fecha_compra = new Date(datosComunes.fecha_compra).toISOString().split('T')[0];
+          } else {
+            datosComunes.fecha_compra = ''; // Handle null date
+          }
+
+          // Ensure precio_usd is a number or empty string
+           datosComunes.precio_usd = datosComunes.precio_usd ? Number(datosComunes.precio_usd) : '';
+
+
+          setActivo(datosComunes);
+          setEspecificaciones(especificacionesParseadas);
+          setIsLoading(false); // Stop loading after data is set
+        })
+        .catch(err => {
+          setError("No se pudo cargar el activo para editar.");
+          setIsLoading(false);
+        });
     } else {
-        setIsLoading(false);
+      setIsLoading(false); // Stop loading if it's a new form
     }
-  }, [id]);
+  }, [id]); // Dependency array includes id
 
-  const handleActivoChange = (e) => {
-    setActivo({ ...activo, [e.target.name]: e.target.value });
-  };
-
-  const handleEspecificacionesChange = (e) => {
-    setEspecificaciones({ ...especificaciones, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (Object.keys(activo).includes(name)) {
+      setActivo({ ...activo, [name]: value });
+    } else {
+      setEspecificaciones({ ...especificaciones, [name]: value });
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const datosCompletos = { ...activo, ...especificaciones };
-    
-    const request = id 
-      ? apiClient.put(`/activos/${id}`, datosCompletos) 
+     // Combine common fields and specifications, ensuring specs is an object
+    const datosCompletos = {
+        ...activo,
+        // Ensure specs is an object, even if empty, before sending
+        especificaciones: (typeof especificaciones === 'object' && especificaciones !== null) ? especificaciones : {}
+      };
+
+    const request = id
+      ? apiClient.put(`/activos/${id}`, datosCompletos)
       : apiClient.post('/activos', datosCompletos);
 
     request
       .then(() => navigate('/dashboard'))
       .catch(err => setError(err.response?.data?.error || 'Error al guardar.'));
   };
-  
-  if (isLoading) return <div style={{ color: 'white' }}>Cargando formulario...</div>;
+
+  if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+
 
   const renderCamposEspecificos = () => {
     const categoriaSeleccionada = categorias.find(c => c.id === Number(activo.categoria_id));
     if (!categoriaSeleccionada) return null;
 
+    // Use value={especificaciones.fieldName || ''} for all specific fields
     switch (categoriaSeleccionada.nombre) {
       case 'Laptop':
       case 'PC de Escritorio':
       case 'Servidor':
         return (
           <>
-            <div className="form-field"><label>CPU:</label><input type="text" name="cpu" value={especificaciones.cpu || ''} onChange={handleEspecificacionesChange} /></div>
-            <div className="form-field"><label>RAM:</label><input type="text" name="ram" value={especificaciones.ram || ''} onChange={handleEspecificacionesChange} /></div>
-            <div className="form-field"><label>Disco Duro:</label><input type="text" name="disco_duro" value={especificaciones.disco_duro || ''} onChange={handleEspecificacionesChange} /></div>
-            <div className="form-field"><label>Service Tag:</label><input type="text" name="service_tag" value={especificaciones.service_tag || ''} onChange={handleEspecificacionesChange} /></div>
+            <Grid item xs={12} sm={6}><TextField fullWidth label="CPU" name="cpu" value={especificaciones.cpu || ''} onChange={handleChange} /></Grid>
+            <Grid item xs={12} sm={6}><TextField fullWidth label="RAM" name="ram" value={especificaciones.ram || ''} onChange={handleChange} /></Grid>
+            <Grid item xs={12} sm={6}><TextField fullWidth label="Disco Duro" name="disco_duro" value={especificaciones.disco_duro || ''} onChange={handleChange} /></Grid>
+            <Grid item xs={12} sm={6}><TextField fullWidth label="Service Tag" name="service_tag" value={especificaciones.service_tag || ''} onChange={handleChange} /></Grid>
           </>
         );
       case 'YubiKey':
-        return (
-          <div className="form-field"><label>GID:</label><input type="text" name="gid" value={especificaciones.gid || ''} onChange={handleEspecificacionesChange} /></div>
-        );
-      case 'Switch':
-        return (
-          <div className="form-field"><label>Número de Puertos:</label><input type="number" name="numero_puertos" value={especificaciones.numero_puertos || ''} onChange={handleEspecificacionesChange} /></div>
-        );
+        return <Grid item xs={12} sm={6}><TextField fullWidth label="GID" name="gid" value={especificaciones.gid || ''} onChange={handleChange} /></Grid>;
+       case 'Switch':
+        return <Grid item xs={12} sm={6}><TextField fullWidth type="number" label="Número de Puertos" name="numero_puertos" value={especificaciones.numero_puertos || ''} onChange={handleChange} /></Grid>;
+      // Add more cases for other categories here
       default:
         return null;
     }
   };
 
   return (
-    <div className="form-container">
-      <form onSubmit={handleSubmit}>
-        <h2>{id ? 'Editar Activo' : 'Añadir Nuevo Activo'}</h2>
-        
-        <div className="form-field">
-          <label>Categoría:</label>
-          <select name="categoria_id" value={activo.categoria_id} onChange={handleActivoChange} required>
-            <option value="">-- Selecciona una categoría --</option>
-            {categorias.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-            ))}
-          </select>
-        </div>
+    // Use Paper for a nice background and padding
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom color="primary" sx={{ mb: 2 }}>
+        {id ? '✏️ Editar Dispositivo' : '➕ Agregar Nuevo Dispositivo'}
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        {id ? 'Modifica la información del dispositivo seleccionado.' : 'Completa la información para registrar un nuevo dispositivo en el inventario.'}
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <Grid container spacing={2}>
+          {/* Category Selector */}
+          <Grid item xs={12}>
+            <TextField
+              select
+              fullWidth
+              label="Categoría"
+              name="categoria_id"
+              value={activo.categoria_id || ''} // Ensure value is controlled
+              onChange={handleChange}
+              required
+              disabled={!!id} // Disable category change when editing
+            >
+              <MenuItem value="">-- Selecciona una categoría --</MenuItem>
+              {categorias.map(cat => (
+                <MenuItem key={cat.id} value={cat.id}>{cat.nombre}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-        <div className="form-columns">
-          <div className="form-column">
-            <div className="form-field"><label>Nombre:</label><input type="text" name="nombre" value={activo.nombre || ''} onChange={handleActivoChange} required /></div>
-            <div className="form-field"><label>Marca:</label><input type="text" name="marca" value={activo.marca || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Modelo:</label><input type="text" name="modelo" value={activo.modelo || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Número de Serie:</label><input type="text" name="numero_serie" value={activo.numero_serie || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Ubicación:</label><input type="text" name="ubicacion" value={activo.ubicacion || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Proveedor:</label><input type="text" name="proveedor" value={activo.proveedor || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Responsable:</label><input type="text" name="responsable" value={activo.responsable || ''} onChange={handleActivoChange} /></div>
-          </div>
-          <div className="form-column">
-            <div className="form-field"><label>Fecha de Compra:</label><input type="date" name="fecha_compra" value={activo.fecha_compra || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field"><label>Precio (USD):</label><input type="number" step="0.01" name="precio_usd" value={activo.precio_usd || ''} onChange={handleActivoChange} /></div>
-            <div className="form-field">
-              <label>Estado:</label>
-              <select name="estado" value={activo.estado || 'Activo'} onChange={handleActivoChange}>
-                <option value="Activo">Activo</option>
-                <option value="En reparación">En reparación</option>
-                <option value="De baja">De baja</option>
-              </select>
-            </div>
-            <div className="form-field"><label>Notas:</label><textarea name="notas" value={activo.notas || ''} onChange={handleActivoChange}></textarea></div>
-            
-            {renderCamposEspecificos()}
-          </div>
-        </div>
-        
-        {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
-        <button type="submit">Guardar Activo</button>
-      </form>
-    </div>
+          {/* Common Fields */}
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Nombre" name="nombre" value={activo.nombre || ''} onChange={handleChange} required /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Marca" name="marca" value={activo.marca || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Modelo" name="modelo" value={activo.modelo || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Número de Serie" name="numero_serie" value={activo.numero_serie || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Ubicación" name="ubicacion" value={activo.ubicacion || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Responsable" name="responsable" value={activo.responsable || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Proveedor" name="proveedor" value={activo.proveedor || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}><TextField fullWidth label="Precio (USD)" name="precio_usd" type="number" step="0.01" value={activo.precio_usd || ''} onChange={handleChange} /></Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+                select
+                fullWidth
+                label="Estado"
+                name="estado"
+                value={activo.estado || 'Activo'} // Default to 'Activo' if undefined
+                onChange={handleChange}
+            >
+                <MenuItem value="Activo">Activo</MenuItem>
+                <MenuItem value="En Mantenimiento">En Mantenimiento</MenuItem>
+                <MenuItem value="En reparación">En reparación</MenuItem>
+                <MenuItem value="De baja">De baja</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Fecha de Compra"
+              name="fecha_compra"
+              type="date"
+              value={activo.fecha_compra || ''} // Handle null/undefined date
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }} // Keep label floated
+            />
+          </Grid>
+
+          {/* Dynamic Specific Fields */}
+          {renderCamposEspecificos()}
+
+          {/* Notes Field */}
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Notas"
+              name="notas"
+              value={activo.notas || ''}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          {/* Error Message */}
+          {error && <Grid item xs={12}><Typography color="error">{error}</Typography></Grid>}
+
+          {/* Submit Button */}
+          <Grid item xs={12}>
+            <Button type="submit" variant="contained" fullWidth sx={{ mt: 2, p: 1.5 }}>
+              {id ? 'Guardar Cambios' : 'Guardar Activo'}
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+    </Paper>
   );
 }
 

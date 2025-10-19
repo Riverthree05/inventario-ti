@@ -19,6 +19,7 @@ function Sidebar() {
             </div>
             <nav className="sidebar-nav">
                 <NavLink to="/dashboard">Dashboard</NavLink>
+                <NavLink to="/activos/nuevo">Agregar Dispositivo</NavLink>
                 <NavLink to="/escaner-qr">Escanear QR</NavLink>
             </nav>
             <div className="sidebar-footer">
