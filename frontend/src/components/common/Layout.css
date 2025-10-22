@@ -3,10 +3,43 @@
 }
 
 .main-content {
-  margin-left: 240px; /* Ancho del sidebar */
-  width: calc(100% - 240px); /* Ocupa el resto del espacio */
+  margin-left: 220px; /* Ancho del sidebar reducido */
+  width: calc(100% - 220px); /* Ocupa el resto del espacio */
   padding: 24px;
   min-height: 100vh;
+  max-width: none; /* Permite usar todo el ancho disponible */
+}
+
+/* Mejoras para monitores grandes */
+@media (min-width: 1200px) {
+  .sidebar {
+    width: 240px; /* Sidebar un poco más ancho en pantallas grandes */
+  }
+  
+  .main-content {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+    padding: 32px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .main-content {
+    padding: 40px;
+  }
+}
+
+/* Reglas para hacer el layout responsivo en tablets */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .sidebar {
+    width: 200px;
+  }
+  
+  .main-content {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+    padding: 20px;
+  }
 }
 
 /* Reglas para hacer el layout responsivo en móviles */
@@ -23,5 +56,6 @@
   .main-content {
     margin-left: 0;
     width: 100%;
+    padding: 16px;
   }
 }

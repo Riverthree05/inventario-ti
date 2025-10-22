@@ -46,9 +46,30 @@ function Dashboard() {
   // ------------------------------------
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>Dashboard</Typography>
+    <Box sx={{ flexGrow: 1, maxWidth: '100%' }}>
+      {/* Header mejorado */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: { xs: 2, md: 4 },
+        flexWrap: 'wrap',
+        gap: 2
+      }}>
+        <Typography 
+          variant="h3" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 600,
+            background: 'linear-gradient(135deg, #00bfff 0%, #0099cc 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontSize: { xs: '2rem', md: '3rem', lg: '3.5rem' }
+          }}
+        >
+          Dashboard
+        </Typography>
         <Button
           component={Link}
           to="/activos/nuevo"
@@ -57,54 +78,128 @@ function Dashboard() {
           startIcon={<AddIcon />}
           size="large"
           sx={{ 
-            px: 3, 
-            py: 1.5, 
-            fontSize: '1.1rem',
+            px: { xs: 2, md: 4 }, 
+            py: { xs: 1, md: 2 }, 
+            fontSize: { xs: '0.9rem', md: '1.1rem', lg: '1.2rem' },
             fontWeight: 'bold',
             boxShadow: 3,
-            '&:hover': { boxShadow: 6 }
+            borderRadius: 3,
+            textTransform: 'none',
+            background: 'linear-gradient(135deg, #00bfff 0%, #0099cc 100%)',
+            '&:hover': { 
+              boxShadow: 6,
+              background: 'linear-gradient(135deg, #0099cc 0%, #007aa3 100%)',
+              transform: 'translateY(-2px)'
+            },
+            transition: 'all 0.3s ease-in-out'
           }}
         >
           Agregar Dispositivo
         </Button>
       </Box>
       
-      {/* Sección de Tarjetas Responsivas */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* Sección de Tarjetas Responsivas Mejorada */}
+      <Grid container spacing={{ xs: 2, md: 3, lg: 4 }} sx={{ mb: { xs: 3, md: 5 } }}>
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard title="Total de Activos" value={stats.totalActivos ?? 'N/A'} />
         </Grid>
         {stats.activosPorEstado && stats.activosPorEstado.map((item, index) => (
-            <Grid item xs={12} sm={6} md={3} key={item.estado}>
+            <Grid item xs={12} sm={6} lg={3} key={item.estado}>
                 <StatCard title={`Activos en "${item.estado}"`} value={item.count ?? 'N/A'} color={COLORS[index % COLORS.length]} />
             </Grid>
         ))}
       </Grid>
       
-      {/* Sección de Gráfico y Tabla Responsiva */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} lg={5}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6">Activos por Estado</Typography>
+      {/* Sección de Gráfico y Tabla Responsiva Mejorada */}
+      <Grid container spacing={{ xs: 2, md: 3, lg: 4 }}>
+        <Grid item xs={12} xl={5}>
+          <Paper sx={{ 
+            p: { xs: 2, md: 3, lg: 4 }, 
+            height: { xs: 400, md: 500, lg: 550 },
+            borderRadius: 3,
+            boxShadow: 3
+          }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                mb: 3, 
+                fontWeight: 600,
+                fontSize: { xs: '1.25rem', md: '1.5rem', lg: '1.75rem' }
+              }}
+            >
+              Activos por Estado
+            </Typography>
             {stats.activosPorEstado && stats.activosPorEstado.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
-                  <Pie data={stats.activosPorEstado} dataKey="count" nameKey="estado" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
+                  <Pie 
+                    data={stats.activosPorEstado} 
+                    dataKey="count" 
+                    nameKey="estado" 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={100} 
+                    fill="#8884d8" 
+                    label
+                    stroke="#fff"
+                    strokeWidth={2}
+                  >
                     {stats.activosPorEstado.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#2c2c2c',
+                      border: '2px solid #00bfff',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8)'
+                    }}
+                    labelStyle={{
+                      color: '#00bfff',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      marginBottom: '4px'
+                    }}
+                    itemStyle={{
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{
+                      fontSize: '14px',
+                      color: '#fff'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            ) : <Typography sx={{mt: 2}}>No hay datos de estado para mostrar.</Typography>}
+            ) : <Typography sx={{mt: 2, textAlign: 'center', color: 'text.secondary'}}>No hay datos de estado para mostrar.</Typography>}
           </Paper>
         </Grid>
         
-        <Grid item xs={12} lg={7}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6">Últimos Activos Registrados</Typography>
+        <Grid item xs={12} xl={7}>
+          <Paper sx={{ 
+            p: { xs: 2, md: 3, lg: 4 }, 
+            height: { xs: 400, md: 500, lg: 550 },
+            borderRadius: 3,
+            boxShadow: 3
+          }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                mb: 3, 
+                fontWeight: 600,
+                fontSize: { xs: '1.25rem', md: '1.5rem', lg: '1.75rem' }
+              }}
+            >
+              Últimos Activos Registrados
+            </Typography>
             <ActivoTabla equipos={activos.slice(0, 5)} />
           </Paper>
         </Grid>

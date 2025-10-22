@@ -53,6 +53,19 @@ exports.crear = async (req, res) => {
         });
     } catch (err) {
         console.error("Error en crear:", err);
+        
+        // Manejo específico de errores comunes
+        if (err.code === 'ER_DUP_ENTRY') {
+            if (err.sqlMessage.includes('numero_serie')) {
+                return res.status(409).json({ 
+                    error: 'El número de serie ya existe en el sistema. Por favor, ingresa un número de serie único.' 
+                });
+            }
+            return res.status(409).json({ 
+                error: 'Ya existe un activo con esta información. Verifica los datos duplicados.' 
+            });
+        }
+        
         res.status(500).json({ error: 'Error al crear el activo' });
     }
 };
@@ -93,6 +106,14 @@ exports.actualizar = async (req, res) => {
         res.json({ message: 'Activo actualizado con éxito' });
     } catch (err) {
         console.error("Error en actualizar:", err);
+        
+        // Manejo específico del error de duplicado de número de serie
+        if (err.code === 'ER_DUP_ENTRY' && err.message.includes('numero_serie')) {
+            return res.status(409).json({ 
+                error: '⚠️ Ya existe un dispositivo con este número de serie. Por favor, utilice un número de serie único.' 
+            });
+        }
+        
         res.status(500).json({ error: 'Error al actualizar el activo' });
     }
 };

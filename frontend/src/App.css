@@ -1,0 +1,67 @@
+/* Estilos globales para un diseño más profesional y responsivo */
+
+/* Scrollbars personalizados */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #00bfff 0%, #0099cc 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0099cc 0%, #007aa3 100%);
+}
+
+/* Mejoras para el body */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #121212;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Mejoras para contenedores principales */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Animaciones globales */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Mejoras para focus */
+*:focus {
+  outline: 2px solid #00bfff;
+  outline-offset: 2px;
+}
+
+/* Mejoras para selección de texto */
+::selection {
+  background: rgba(0, 191, 255, 0.3);
+  color: white;
+}
