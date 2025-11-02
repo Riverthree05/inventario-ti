@@ -42,21 +42,8 @@ exports.crear = async (req, res) => {
         const datosActivo = { ...req.body };
         
         // Manejar especificaciones
-        if (datosActivo.especificaciones) {
-            // Aceptar tanto objeto como string JSON. Normalizamos a string JSON antes de insertar.
-            if (typeof datosActivo.especificaciones === 'object') {
-                datosActivo.especificaciones = JSON.stringify(datosActivo.especificaciones);
-            } else if (typeof datosActivo.especificaciones === 'string') {
-                try {
-                    const parsed = JSON.parse(datosActivo.especificaciones);
-                    datosActivo.especificaciones = JSON.stringify(parsed);
-                } catch (e) {
-                    // Si no es JSON válido, guardamos un objeto vacío para evitar errores
-                    datosActivo.especificaciones = JSON.stringify({});
-                }
-            } else {
-                datosActivo.especificaciones = JSON.stringify({});
-            }
+        if (datosActivo.especificaciones && typeof datosActivo.especificaciones === 'object') {
+            datosActivo.especificaciones = JSON.stringify(datosActivo.especificaciones);
         }
         
         const [result] = await pool.query('INSERT INTO activos SET ?', datosActivo);
@@ -103,18 +90,11 @@ exports.actualizar = async (req, res) => {
             }
         });
         
-        // Manejar especificaciones aparte - aceptar string JSON o objeto
-        if (req.body.especificaciones !== undefined) {
-            let especificacionesObj = {};
-            if (typeof req.body.especificaciones === 'object' && req.body.especificaciones !== null) {
-                especificacionesObj = req.body.especificaciones;
-            } else if (typeof req.body.especificaciones === 'string') {
-                try {
-                    especificacionesObj = JSON.parse(req.body.especificaciones);
-                } catch (e) {
-                    especificacionesObj = {};
-                }
-            }
+        // Manejar especificaciones aparte
+        if (req.body.especificaciones) {
+            const especificacionesObj = typeof req.body.especificaciones === 'object' 
+                ? req.body.especificaciones 
+                : {};
             datosAActualizar.especificaciones = JSON.stringify(especificacionesObj);
         }
 

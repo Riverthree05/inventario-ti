@@ -82,18 +82,12 @@ function ActivoForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Combine common fields and specifications. The backend expects especificaciones
-    // to be stored as a JSON string in the DB. To avoid inconsistencies we stringify
-    // on the client side as well. For empty specs we send '{}' (string).
-    const specsToSend = (typeof especificaciones === 'object' && especificaciones !== null)
-      ? (Object.keys(especificaciones).length ? JSON.stringify(especificaciones) : '{}')
-      : '{}';
-
+     // Combine common fields and specifications, ensuring specs is an object
     const datosCompletos = {
-      ...activo,
-      especificaciones: specsToSend
-    };
+        ...activo,
+        // Ensure specs is an object, even if empty, before sending
+        especificaciones: (typeof especificaciones === 'object' && especificaciones !== null) ? especificaciones : {}
+      };
 
     const request = id
       ? apiClient.put(`/activos/${id}`, datosCompletos)
@@ -108,7 +102,7 @@ function ActivoForm() {
       .catch(err => {
         const errorMessage = err.response?.data?.error || 'Error al guardar el dispositivo.';
         setError(errorMessage);
-
+        
         // Scroll hacia arriba para mostrar el error
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
