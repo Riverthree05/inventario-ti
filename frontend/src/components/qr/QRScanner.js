@@ -27,10 +27,17 @@ function QRScanner() {
         try {
           const url = new URL(decodedText);
           const path = url.pathname;
-          if (path.startsWith('/activos/')) {
-            navigate(path);
+          const search = url.search || '';
+          // Si la URL apunta a la misma origin, navegamos internamente incluyendo los query params
+          if (url.origin === window.location.origin) {
+            if (path.startsWith('/activos/')) {
+              navigate(path + search);
+            } else {
+              alert('Código QR no válido para esta aplicación.');
+            }
           } else {
-            alert('Código QR no válido para esta aplicación.');
+            // Si es otra origin, redirigimos el navegador completo (por ejemplo, token en query)
+            window.location.href = decodedText;
           }
         } catch (e) {
           alert('El código QR no contiene una URL válida.');

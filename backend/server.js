@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const { applySecurity } = require('./src/middleware/security');
 
 // Importar rutas
 const usuariosRoutes = require('./src/rutas/usuarios');
@@ -14,7 +15,8 @@ const reportesRoutes = require('./src/rutas/reportes');
 const app = express();
 
 // Middlewares
-app.use(cors());
+// Apply security (helmet, rate-limit, cors policy)
+applySecurity(app);
 app.use(express.json());
 app.use(morgan('dev')); // Muestra logs de las peticiones en la consola
 
@@ -26,8 +28,16 @@ app.use('/api/mantenimientos', mantenimientoRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/reportes', reportesRoutes);
 
-// Iniciar servidor
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-});
+// Error handler (must be after routes)
+const errorHandler = require('./src/middleware/errorHandler');
+app.use(errorHandler);
+
+// Export app for testing; start server only when run directly
+if (require.main === module) {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

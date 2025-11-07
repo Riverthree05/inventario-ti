@@ -15,7 +15,7 @@ function Sidebar() {
     return (
         <div className="sidebar">
             <div className="sidebar-header">
-                <h3>Inventario TI</h3>
+                <h3><NavLink to="/dashboard" className="brand">Inventario TI</NavLink></h3>
             </div>
             <nav className="sidebar-nav">
                 <NavLink to="/dashboard">Dashboard</NavLink>

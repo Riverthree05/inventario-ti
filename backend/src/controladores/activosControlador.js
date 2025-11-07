@@ -10,7 +10,8 @@ exports.obtenerTodos = async (req, res) => {
         `);
         res.json(rows);
     } catch (err) {
-        console.error("Error en obtenerTodos:", err);
+        const logger = require('../utils/logger');
+        logger.error({ msg: 'Error en obtenerTodos', error: err.message || err });
         res.status(500).json({ error: 'Error al obtener los activos' });
     }
 };
@@ -31,7 +32,8 @@ exports.obtenerPorId = async (req, res) => {
         }
         res.json(rows[0]);
     } catch (err) {
-        console.error("Error en obtenerPorId:", err);
+        const logger = require('../utils/logger');
+        logger.error({ msg: 'Error en obtenerPorId', error: err.message || err });
         res.status(500).json({ error: 'Error al obtener el activo' });
     }
 };
@@ -39,20 +41,52 @@ exports.obtenerPorId = async (req, res) => {
 // CREAR un nuevo activo
 exports.crear = async (req, res) => {
     try {
-        const datosActivo = { ...req.body };
-        
-        // Manejar especificaciones
-        if (datosActivo.especificaciones && typeof datosActivo.especificaciones === 'object') {
-            datosActivo.especificaciones = JSON.stringify(datosActivo.especificaciones);
-        }
-        
-        const [result] = await pool.query('INSERT INTO activos SET ?', datosActivo);
-        res.status(201).json({ 
-            id: result.insertId, 
-            message: 'Activo creado con éxito' 
+        // Lista de campos permitidos para insertar (evitar pasar campos inesperados que rompan la consulta)
+        const camposPermitidos = [
+            'bitlocker',
+            'categoria_id', 'nombre', 'marca', 'modelo', 'numero_serie',
+            'estado', 'ubicacion', 'proveedor', 'fecha_compra', 'precio_usd',
+            'responsable', 'notas'
+        ];
+
+        const datosActivo = {};
+        camposPermitidos.forEach(campo => {
+            if (req.body[campo] !== undefined) datosActivo[campo] = req.body[campo];
         });
+
+    // Prepare warnings collector
+    let warnings = [];
+
+    // Manejar especificaciones (serializar si viene como objeto) con saneamiento
+    if (req.body.especificaciones) {
+            // Aceptamos especificaciones como string JSON o como objeto.
+            let specsObj = {};
+            if (typeof req.body.especificaciones === 'string') {
+                try { specsObj = JSON.parse(req.body.especificaciones); } catch (e) { specsObj = {}; }
+            } else if (typeof req.body.especificaciones === 'object' && req.body.especificaciones !== null) {
+                specsObj = req.body.especificaciones;
+            }
+
+            const { sanitizeObject } = require('../utils/specsUtils');
+            const warnings = [];
+            // Sanear y normalizar (también elimina claves sensibles según util)
+            const sanitized = sanitizeObject(specsObj, warnings);
+
+            // Si el cliente envió estado bitlocker a nivel de payload, úsalo
+            if (req.body.bitlocker && !datosActivo.bitlocker) {
+                datosActivo.bitlocker = req.body.bitlocker;
+            }
+
+            datosActivo.especificaciones = JSON.stringify(sanitized);
+        }
+
+    const [result] = await pool.query('INSERT INTO activos SET ?', datosActivo);
+    const resp = { id: result.insertId, message: 'Activo creado con éxito' };
+    if (Array.isArray(warnings) && warnings.length) resp.warnings = warnings;
+    res.status(201).json(resp);
     } catch (err) {
-        console.error("Error en crear:", err);
+        const logger = require('../utils/logger');
+        logger.error({ msg: 'Error en crear', error: err.message || err });
         
         // Manejo específico de errores comunes
         if (err.code === 'ER_DUP_ENTRY') {
@@ -90,22 +124,40 @@ exports.actualizar = async (req, res) => {
             }
         });
         
-        // Manejar especificaciones aparte
-        if (req.body.especificaciones) {
-            const especificacionesObj = typeof req.body.especificaciones === 'object' 
-                ? req.body.especificaciones 
-                : {};
-            datosAActualizar.especificaciones = JSON.stringify(especificacionesObj);
+    // Prepare warnings collector
+    let warnings = [];
+
+    // Manejar especificaciones aparte (saneamiento y eliminación de datos sensibles)
+    if (req.body.especificaciones) {
+            let specsObj = {};
+            if (typeof req.body.especificaciones === 'string') {
+                try { specsObj = JSON.parse(req.body.especificaciones); } catch (e) { specsObj = {}; }
+            } else if (typeof req.body.especificaciones === 'object' && req.body.especificaciones !== null) {
+                specsObj = req.body.especificaciones;
+            }
+
+            const { sanitizeObject } = require('../utils/specsUtils');
+            const warnings = [];
+            const sanitized = sanitizeObject(specsObj, warnings);
+
+            if (req.body.bitlocker && !datosAActualizar.bitlocker) {
+                datosAActualizar.bitlocker = req.body.bitlocker;
+            }
+
+            datosAActualizar.especificaciones = JSON.stringify(sanitized);
         }
 
-        const [result] = await pool.query('UPDATE activos SET ? WHERE id = ?', [datosAActualizar, id]);
-        
+    const [result] = await pool.query('UPDATE activos SET ? WHERE id = ?', [datosAActualizar, id]);
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Activo no encontrado' });
         }
-        res.json({ message: 'Activo actualizado con éxito' });
+        const resp = { message: 'Activo actualizado con éxito' };
+        if (Array.isArray(warnings) && warnings.length) resp.warnings = warnings;
+        res.json(resp);
     } catch (err) {
-        console.error("Error en actualizar:", err);
+        const logger = require('../utils/logger');
+        logger.error({ msg: 'Error en actualizar', error: err.message || err });
         
         // Manejo específico del error de duplicado de número de serie
         if (err.code === 'ER_DUP_ENTRY' && err.message.includes('numero_serie')) {
@@ -129,7 +181,8 @@ exports.eliminar = async (req, res) => {
         }
         res.json({ message: 'Activo eliminado con éxito' });
     } catch (err) {
-        console.error("Error en eliminar:", err);
+        const logger = require('../utils/logger');
+        logger.error({ msg: 'Error en eliminar', error: err.message || err });
         res.status(500).json({ error: 'Error al eliminar el activo' });
     }
 };
