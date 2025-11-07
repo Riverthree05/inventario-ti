@@ -47,26 +47,26 @@ function MantenimientoForm() {
     <Box sx={{ maxWidth: { xs: '100%', md: '800px', lg: '1000px' }, mx: 'auto', p: { xs: 2, md: 3 } }}>
       {/* Header Section */}
       <Paper 
-        sx={{ 
+        sx={(theme) => ({ 
           p: { xs: 3, md: 4 }, 
           mb: 3,
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #1a2e1a 0%, #2e4016 50%, #604f0f 100%)',
-          border: '1px solid rgba(255, 193, 7, 0.3)',
+          background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 60%)`,
+          border: `1px solid ${theme.palette.secondary.main}33`,
           textAlign: 'center'
-        }}
+        })}
       >
         <Typography 
           variant="h3" 
-          sx={{ 
+          sx={(theme) => ({ 
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #ffc107 0%, #ff8f00 100%)',
+            background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.light} 100%)`,
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             fontSize: { xs: '2rem', md: '2.8rem', lg: '3.2rem' },
             mb: 2
-          }}
+          })}
         >
           Registrar Mantenimiento
         </Typography>

@@ -15,6 +15,7 @@ function ActivoForm() {
   const [especificaciones, setEspecificaciones] = useState({});
   const [showRecoveryKey, setShowRecoveryKey] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
@@ -83,21 +84,36 @@ function ActivoForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
      // Combine common fields and specifications, ensuring specs is an object
+    // If the user entered a BitLocker recovery key, do NOT send it to the backend.
+    // We keep a local informational message to inform the user that the key is not stored.
+    const specsToSend = (typeof especificaciones === 'object' && especificaciones !== null) ? { ...especificaciones } : {};
+    if (specsToSend.bitlocker_recovery_key) {
+      // Remove sensitive recovery key before sending
+      delete specsToSend.bitlocker_recovery_key;
+      setInfo('El código de recuperación de BitLocker NO será almacenado en la base de datos por razones de seguridad. Guárdalo en un lugar seguro.');
+    }
+
     const datosCompletos = {
-        ...activo,
-        // Ensure specs is an object, even if empty, before sending
-        especificaciones: (typeof especificaciones === 'object' && especificaciones !== null) ? especificaciones : {}
-      };
+      ...activo,
+      especificaciones: specsToSend
+    };
 
     const request = id
       ? apiClient.put(`/activos/${id}`, datosCompletos)
       : apiClient.post('/activos', datosCompletos);
 
     request
-      .then(() => {
+      .then((res) => {
+        // Si el backend devuelve advertencias, muéstralas al usuario (se muestran también en la vista detalle)
+        const warnings = res?.data?.warnings;
+        if (Array.isArray(warnings) && warnings.length) {
+          setInfo(warnings.join('. '));
+        }
+
         // Mensaje de éxito antes de navegar
         alert('¡Dispositivo guardado con éxito!');
-        navigate('/dashboard');
+        // Navegar a detalle para que el usuario vea las advertencias en contexto
+        navigate(`/activos/${res?.data?.id || id}`);
       })
       .catch(err => {
         const errorMessage = err.response?.data?.error || 'Error al guardar el dispositivo.';
@@ -281,6 +297,7 @@ function ActivoForm() {
 
           {/* Error */}
           {error && <Alert severity="error">{error}</Alert>}
+          {info && <Alert severity="info" sx={{ mt: 2 }}>{info}</Alert>}
 
           {/* Botón */}
           <Button 

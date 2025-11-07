@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "especificaciones": {
+      "cpu": "INTEL",
+      "ram": "DDR5",
+      "estado": "En Mantenimiento",
+      "ubicacion": "Laboratorio de TI",
+      "disco_duro": "SSD",
+      "responsable": "Rodrigo De La Cruz",
+      "service_tag": "123123456789012345678923456789"
+    }
+  },
+  {
+    "id": 3,
+    "especificaciones": {
+      "marca": "HP",
+      "notas": "",
+      "estado": "Activo",
+      "modelo": "Inspiron 15 3000",
+      "proveedor": "N/A",
+      "ubicacion": "Laboratorio de TI",
+      "precio_usd": "1000",
+      "responsable": "YAMI",
+      "fecha_compra": "",
+      "numero_serie": "12345678",
+      "especificaciones": {
+        "cpu": "INTEL",
+        "ram": "DDR5",
+        "disco_duro": "SSD",
+        "service_tag": "123123456789012345678923456789"
+      }
+    }
+  },
+  {
+    "id": 4,
+    "especificaciones": {
+      "cpu": "INTEL",
+      "ram": "DDR5",
+      "marca": "Lenonovo",
+      "notas": "Lap lenovo",
+      "estado": "Activo",
+      "modelo": "legión 5",
+      "proveedor": "N/A",
+      "ubicacion": "administración ",
+      "disco_duro": "SSD",
+      "precio_usd": "5000",
+      "responsable": "Rodrigo ",
+      "service_tag": "123123456789012345678923456789",
+      "fecha_compra": "2023-10-06",
+      "numero_serie": "125638291&2",
+      "especificaciones": {
+        "cpu": "RTX 3050",
+        "ram": "DDR5",
+        "disco_duro": "SSD",
+        "service_tag": "123456739493"
+      }
+    }
+  },
+  {
+    "id": 5,
+    "especificaciones": {}
+  },
+  {
+    "id": 6,
+    "especificaciones": {
+      "cpu": "INTEL",
+      "ram": "DDR5 16gb",
+      "disco_duro": "SSD",
+      "service_tag": "12345",
+      "bitlocker_recovery_key": "1234567890987654321"
+    }
+  }
+]

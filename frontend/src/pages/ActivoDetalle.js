@@ -7,6 +7,7 @@ import { Box, Typography, Paper, Grid, Button, Divider, CircularProgress } from 
 
 function ActivoDetalle() {
   const [activo, setActivo] = useState(null);
+  const [warnings, setWarnings] = useState([]);
   const [mantenimientos, setMantenimientos] = useState([]);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +17,11 @@ function ActivoDetalle() {
   useEffect(() => {
     // La lógica para cargar datos se mantiene igual
     apiClient.get(`/activos/${id}`)
-      .then(res => setActivo(res.data))
+      .then(res => {
+        const data = res.data || {};
+        setActivo(data);
+        if (Array.isArray(data.warnings) && data.warnings.length) setWarnings(data.warnings);
+      })
       .catch(err => {
         console.error('Error al obtener el activo:', err);
         setError('No se pudo cargar la información del activo.');
@@ -62,9 +67,50 @@ function ActivoDetalle() {
     especificaciones = activo.especificaciones;
   }
 
+  // Helper para renderizar valores de especificaciones de forma segura
+  const renderSpecValue = (val) => {
+    if (val === null || val === undefined) return 'N/A';
+    if (typeof val === 'object') {
+      // Arreglo -> lista simple
+      if (Array.isArray(val)) {
+        return (
+          <Box component="ul" sx={{ pl: 2, m: 0 }}>
+            {val.map((it, idx) => (
+              <li key={idx}>{renderSpecValue(it)}</li>
+            ))}
+          </Box>
+        );
+      }
+
+      // Objeto -> listar claves/valores anidados
+      return (
+        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+          {Object.entries(val).map(([k, v]) => (
+            <li key={k}>
+              <strong>{k.replace(/_/g, ' ').toUpperCase()}:</strong> {renderSpecValue(v)}
+            </li>
+          ))}
+        </Box>
+      );
+    }
+
+    // Primitivo
+    return String(val);
+  };
+
   return (
     // Usar Paper como contenedor principal
     <Paper sx={{ p: 3, margin: 'auto', maxWidth: 1200, flexGrow: 1 }}>
+      {/* Mostrar advertencias de sanitización si las hay */}
+      {warnings.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          {warnings.map((w, idx) => (
+            <Box key={idx} sx={{ mb: 1, p: 1, borderLeft: '4px solid #ff9800', backgroundColor: '#fff8e1' }}>
+              <strong>Advertencia:</strong> {w}
+            </Box>
+          ))}
+        </Box>
+      )}
       <Typography variant="h4" gutterBottom>{activo.nombre}</Typography>
 
       <Grid container spacing={4}>
@@ -91,7 +137,10 @@ function ActivoDetalle() {
           <Box component="ul" sx={{ listStyle: 'none', p: 0 }}>
             {Object.keys(especificaciones).length > 0 ? (
               Object.entries(especificaciones).map(([key, value]) => (
-                <li key={key}><strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {String(value)}</li>
+                <li key={key}>
+                  <strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong>{' '}
+                  {renderSpecValue(value)}
+                </li>
               ))
             ) : (
               <li>No hay especificaciones adicionales para esta categoría.</li>
@@ -103,11 +152,7 @@ function ActivoDetalle() {
         <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
           <Typography variant="h6">Código QR</Typography>
           {qrCodeUrl ? (
-            <img
-              src={qrCodeUrl}
-              alt={`QR para ${activo.nombre}`}
-              style={{ width: '100%', maxWidth: '200px', border: '1px solid #ddd', padding: '5px', marginTop: '10px' }}
-            />
+            <Box component="img" src={qrCodeUrl} alt={`QR para ${activo.nombre}`} sx={{ width: '100%', maxWidth: 200, border: '1px solid', borderColor: 'divider', p: 1, mt: 1 }} />
           ) : <CircularProgress sx={{ mt: 2 }} />}
           <Button variant="outlined" onClick={handleImprimir} sx={{ mt: 2 }} fullWidth>
             Imprimir Etiqueta

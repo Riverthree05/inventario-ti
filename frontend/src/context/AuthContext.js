@@ -34,5 +34,6 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  // Return a safe default when the context is not provided (useful for tests)
+  return useContext(AuthContext) || { token: null, login: async () => false, logout: () => {} };
 };
