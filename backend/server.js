@@ -20,6 +20,15 @@ applySecurity(app);
 app.use(express.json());
 app.use(morgan('dev')); // Muestra logs de las peticiones en la consola
 
+// Health endpoint for readiness/liveness checks
+app.get('/healthz', (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: process.uptime(),
+        env: process.env.NODE_ENV || 'development'
+    });
+});
+
 // Conectar las rutas de la API
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/categorias', categoriasRoutes);
