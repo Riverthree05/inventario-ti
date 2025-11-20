@@ -16,18 +16,65 @@ DB_NAME="${DB_NAME:-inventario}"
 BACKUP_DIR="/var/backups/inventario"
 MIGRATION_SQL="/srv/inventario/inventario-ti/final_migration.sql"
 
+# Minimum free space required (in MiB) for the DB dump (adjust as needed)
+MIN_FREE_MIB=500
+
+err() {
+  echo "ERROR: $*" >&2
+}
+
+info() {
+  echo "INFO: $*"
+}
+
 if [ -z "$DB_PASS" ]; then
-  echo "ERROR: DB_PASS is empty. Export DB_PASS environment variable before running." >&2
+  err "DB_PASS is empty. Export DB_PASS environment variable before running."
   exit 2
+fi
+
+# Check Node/npm versions (warn only)
+if command -v node >/dev/null 2>&1; then
+  NODE_V=$(node -v)
+  NPM_V=$(npm -v || echo "(npm not found)")
+  info "Node: $NODE_V  npm: $NPM_V"
+else
+  info "Node not found on server; ensure Node is installed for running pm2-managed app"
+fi
+
+# Check DB connectivity
+if command -v mysqladmin >/dev/null 2>&1; then
+  if ! mysqladmin ping -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --silent; then
+    err "Cannot connect to MySQL with provided credentials (mysqladmin ping failed)."
+    exit 2
+  fi
+else
+  # fallback to a simple mysql command
+  if ! mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" >/dev/null 2>&1; then
+    err "Cannot connect to MySQL with provided credentials (mysql client test failed)."
+    exit 2
+  fi
+fi
+
+# Check disk free space on backup dir mount
+mkdir -p "$BACKUP_DIR"
+AVAIL_MIB=$(df -Pm "$BACKUP_DIR" | awk 'NR==2{print $4}')
+if [ -z "$AVAIL_MIB" ]; then
+  err "Could not determine available disk space on $BACKUP_DIR"
+else
+  if [ "$AVAIL_MIB" -lt "$MIN_FREE_MIB" ]; then
+    err "Insufficient free space on $BACKUP_DIR: ${AVAIL_MIB}MiB available (require >= ${MIN_FREE_MIB}MiB)."
+    exit 2
+  fi
+  info "Available space on $BACKUP_DIR: ${AVAIL_MIB}MiB"
 fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p "$BACKUP_DIR"
 
 BACKUP_FILE="$BACKUP_DIR/inventario_${TIMESTAMP}.sql"
-echo "Creating DB backup -> $BACKUP_FILE"
+info "Creating DB backup -> $BACKUP_FILE"
 mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --single-transaction --routines --triggers --databases "$DB_NAME" > "$BACKUP_FILE"
-echo "Backup complete. Size: $(du -h "$BACKUP_FILE" | awk '{print $1}')"
+info "Backup complete. Size: $(du -h "$BACKUP_FILE" | awk '{print $1}')"
 
 echo "Running final migration SQL: $MIGRATION_SQL"
 if [ ! -f "$MIGRATION_SQL" ]; then
