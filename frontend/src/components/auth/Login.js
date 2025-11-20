@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
 // 1. Importar componentes de Material-UI
-import { Button, TextField, Box, Typography, Container } from '@mui/material';
+import { Button, TextField, Box, Typography, Container, Link } from '@mui/material';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -75,6 +75,11 @@ function Login() {
           >
             Entrar
           </Button>
+          <Box sx={{ textAlign: 'center' }}>
+            <Link component={RouterLink} to="/registro" variant="body2">
+              ¿No tienes cuenta? Regístrate
+            </Link>
+          </Box>
         </Box>
       </Box>
     </Container>

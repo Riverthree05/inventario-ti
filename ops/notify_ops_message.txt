@@ -1,0 +1,40 @@
+Subject: [ACTION REQUIRED] Inventario-TI — Staging restore, validation & production migration window
+
+Hi Ops team,
+
+The `ops/deploy-helpers` branch contains everything required to perform the final migration for `especificaciones` (safe non-destructive migration already run locally).
+
+What I added to the branch (copy-paste):
+- `deploy/remote_deploy.sh` — server deploy script (supports `--dry-run`).
+- `ops/maintenance_playbook.md` — maintenance playbook with backup/migration/rollback steps.
+- `ops/execute_final_migration.sh` — runs final migration (creates DB dump, applies `final_migration.sql`, restarts pm2, does smoke check).
+- `ops/run_full_maintenance.sh` — wrapper: deploy + final migration (supports `--dry-run`).
+- `ops/run_in_maintenance_commands.txt` — copy-paste commands for ops (dry-run, final backup, deploy, migration, smoke, rollback).
+- `ops/maintenance_checklist.md` — an actionable checklist with sign-offs.
+
+Immediate actions requested from Ops:
+1) Restore production dump into staging and run `ops/smoke_tests.sh`. Share the smoke test output here.
+2) If staging restore is successful, schedule maintenance window and provision production secrets (DB creds, `JWT_SECRET`, TLS certs, Sentry DSN) on production host.
+3) During the window: run the dry-run commands first, then follow `ops/run_in_maintenance_commands.txt` to perform backup -> deploy -> final migration -> smoke tests.
+
+Dry-run examples (replace placeholders):
+```
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/deploy/remote_deploy.sh main --dry-run'
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/ops/run_full_maintenance.sh main --dry-run'
+```
+
+Real execution example (only after backups and approvals):
+```
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/deploy/remote_deploy.sh main'
+ssh <user>@<prod-host> 'sudo env DB_PASS="<DB_PASS>" /srv/inventario/inventario-ti/ops/execute_final_migration.sh'
+```
+
+If you'd like, I can:
+- Post this message into the PR description as a final ops checklist (done).
+- Prepare an exact Slack/Email message (I can paste it here ready-to-send).
+- Run additional non-invasive checks or provide more smoke tests.
+
+Reply here with staging smoke outputs or tell me which of the above you want me to paste into Slack.
+
+Thanks,
+DevOps/Engineering

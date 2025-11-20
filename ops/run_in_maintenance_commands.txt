@@ -1,0 +1,66 @@
+# Run-in-Maintenance: comandos copy-paste para ops
+# Reemplaza los placeholders antes de ejecutar: <user>, <prod-host>, <backup-host>, <DB_PASS>, etc.
+
+--- PRE-CHECK (en servidor de producción) ---
+# Verificar servicios y salud previa
+sudo systemctl status nginx
+curl -fsS http://127.0.0.1:3001/healthz
+sudo pm2 status
+
+--- DRY-RUNS (recomendado) ---
+# Simular solo deploy (no aplicará cambios)
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/deploy/remote_deploy.sh main --dry-run'
+
+# Simular deploy + migración (no aplicará cambios)
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/ops/run_full_maintenance.sh main --dry-run'
+
+--- FINAL BACKUP (obligatorio) ---
+# Ejecutar en el servidor de producción (asegúrate de tener exportadas las variables DB_HOST/DB_USER/DB_NAME y DB_PASS)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR=/var/backups/inventario
+mkdir -p "$BACKUP_DIR"
+mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --single-transaction --routines --triggers --databases "$DB_NAME" > "$BACKUP_DIR/inventario_${TIMESTAMP}.sql"
+ls -lah "$BACKUP_DIR/inventario_${TIMESTAMP}.sql"
+
+# (Opcional) Copiar backup a almacenamiento externo
+scp "$BACKUP_DIR/inventario_${TIMESTAMP}.sql" <backup-user>@<backup-host>:/secure/backups/inventario/
+
+--- DEPLOY + FINAL MIGRATION (UNA VEZ CONFIRMADO BACKUP) ---
+# Opción A: ejecutar paso a paso
+ssh <user>@<prod-host> 'sudo /srv/inventario/inventario-ti/deploy/remote_deploy.sh main'
+
+# Luego aplicar migración destructiva (ejecutar en el servidor)
+ssh <user>@<prod-host> 'sudo env DB_PASS="<DB_PASS>" /srv/inventario/inventario-ti/ops/execute_final_migration.sh'
+
+# Opción B: usar wrapper (deploy + migration)
+ssh <user>@<prod-host> 'sudo env DB_PASS="<DB_PASS>" /srv/inventario/inventario-ti/ops/run_full_maintenance.sh main'
+
+--- SMOKE TESTS (inmediatamente después) ---
+# Health check
+curl -fsS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3001/healthz
+
+# Listar primeros activos (comprobar que el endpoint responde)
+curl -fsS http://127.0.0.1:3001/api/activos | jq '.' | head -n 20
+
+# Revisar logs para errores críticos
+sudo pm2 logs --lines 200
+sudo journalctl -u nginx --since "5 minutes ago" --no-pager
+
+--- ROLLBACK (si necesario) ---
+# Restaurar el dump más reciente (reemplaza con la ruta correcta al archivo .sql)
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "/var/backups/inventario/inventario_YYYYMMDD_HHMMSS.sql"
+sudo pm2 restart all
+
+--- POST-MIGRATION CHECKLIST ---
+# - Verificar /healthz y endpoints críticos.
+# - Realizar varias operaciones CRUD sobre activos (crear, editar, borrar) y validar en UI.
+# - Verificar que `especificaciones` se muestran correctamente en UI para varios activos.
+# - Comprobar logs de pm2 y nginx durante 15-30 minutos.
+# - Confirmar backups off-site y su integridad (checksum si es posible).
+
+--- NOTAS IMPORTANTES ---
+# - No ejecutar la migración destructiva sin backup verificado y prueba de restauración en staging.
+# - No poner secrets en el repo; usar variables de entorno o secret manager en servidor.
+# - Si necesitas que ejecute alguna verificación o revise logs aquí, pega la salida y la reviso.
+
+*** FIN
