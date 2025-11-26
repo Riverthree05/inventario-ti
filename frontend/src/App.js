@@ -4,8 +4,10 @@ import { useAuth } from "./context/AuthContext";
 
 // Importación de Componentes y Páginas
 import Login from './components/auth/Login';
+import Registro from './components/auth/Registro';
 import Layout from './components/common/Layout';
 import Dashboard from './pages/Dashboard';
+import Reportes from './pages/Reportes';
 import ActivoForm from './components/activos/ActivoForm';
 import ActivoDetalle from './pages/ActivoDetalle';
 import MantenimientoForm from './components/mantenimiento/MantenimientoForm';
@@ -29,13 +31,15 @@ function App() {
 
   return (
     <Routes>
-      {/* Ruta pública para el Login */}
+      {/* Rutas públicas para Login y Registro */}
       <Route path="/login" element={!token ? <Login /> : <Navigate to="/" />} />
+      <Route path="/registro" element={!token ? <Registro /> : <Navigate to="/" />} />
       
       {/* Rutas Protegidas que usarán el Layout con Sidebar */}
       <Route element={token ? <Layout /> : <Navigate to="/login" />}>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/reportes" element={<Reportes />} />
           <Route path="/escaner-qr" element={<EscanerQR />} />
           <Route path="/activos/nuevo" element={<ActivoForm />} />
           <Route path="/activos/editar/:id" element={<ActivoForm />} />
