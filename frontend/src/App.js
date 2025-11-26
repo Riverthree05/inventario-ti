@@ -7,6 +7,7 @@ import Login from './components/auth/Login';
 import Registro from './components/auth/Registro';
 import Layout from './components/common/Layout';
 import Dashboard from './pages/Dashboard';
+import Reportes from './pages/Reportes';
 import ActivoForm from './components/activos/ActivoForm';
 import ActivoDetalle from './pages/ActivoDetalle';
 import MantenimientoForm from './components/mantenimiento/MantenimientoForm';
@@ -38,6 +39,7 @@ function App() {
       <Route element={token ? <Layout /> : <Navigate to="/login" />}>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/reportes" element={<Reportes />} />
           <Route path="/escaner-qr" element={<EscanerQR />} />
           <Route path="/activos/nuevo" element={<ActivoForm />} />
           <Route path="/activos/editar/:id" element={<ActivoForm />} />
